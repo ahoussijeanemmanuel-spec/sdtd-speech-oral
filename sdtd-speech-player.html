@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDTD App — Speech Oral de Soutenance (FR / EN)</title>
+  <style>
+    :root {
+      --primary: #0f4c81;
+      --primary-light: #1a6bb5;
+      --accent: #e8a317;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #1a1a2e;
+      --muted: #5a6a7a;
+      --border: #e2e8f0;
+      --success: #10b981;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container { max-width: 920px; margin: 0 auto; }
+
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 28px 24px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(15, 76, 129, 0.25);
+      text-align: center;
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    header p { opacity: 0.9; font-size: 0.92rem; }
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+
+    /* Language switcher */
+    .lang-switch {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin: 18px 0 22px;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid var(--border);
+    }
+
+    .lang-btn {
+      padding: 11px 28px;
+      border: none;
+      background: transparent;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .lang-btn:hover:not(.active) {
+      background: #f0f7ff;
+      color: var(--primary);
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 11px 20px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn:hover {
+      background: var(--primary-light);
+      transform: translateY(-1px);
+    }
+
+    .btn.secondary {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    .btn.secondary:hover { background: #f0f7ff; }
+
+    .slide-card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+
+    .slide-card.playing {
+      border-color: var(--primary);
+      box-shadow: 0 6px 20px rgba(15, 76, 129, 0.15);
+    }
+
+    .slide-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .slide-num {
+      background: var(--primary);
+      color: white;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .slide-title h2 {
+      font-size: 1.1rem;
+      font-weight: 650;
+      color: var(--text);
+      margin-bottom: 1px;
+    }
+
+    .slide-title .duration {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .speech-text {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary);
+      padding: 13px 15px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.93rem;
+      color: #334155;
+      margin-bottom: 14px;
+      line-height: 1.65;
+    }
+
+    .speech-text.en { display: none; }
+    body.lang-en .speech-text.fr { display: none; }
+    body.lang-en .speech-text.en { display: block; }
+
+    audio {
+      width: 100%;
+      height: 40px;
+      border-radius: 8px;
+    }
+
+    .audio-fr, .audio-en { display: none; }
+    body.lang-fr .audio-fr { display: block; }
+    body.lang-en .audio-en { display: block; }
+
+    .status {
+      font-size: 0.78rem;
+      color: var(--success);
+      margin-top: 7px;
+      display: none;
+      font-weight: 500;
+    }
+
+    .slide-card.playing .status { display: block; }
+
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.25rem; }
+      .slide-card { padding: 16px; }
+      .lang-btn { padding: 10px 20px; }
+    }
+  </style>
+</head>
+<body class="lang-fr">
+  <div class="container">
+    <header>
+      <h1>SDTD App — Speech Oral de Soutenance</h1>
+      <p>Master Informatique · AGITEL-Formation · CIE</p>
+      <p style="margin-top:5px; font-size:0.88rem;">AHOUSSI Ahoussi Jean Emmanuel</p>
+      <div class="badge">11 slides · Français + English · Prêt pour la soutenance</div>
+    </header>
+
+    <!-- Language switcher -->
+    <div class="lang-switch">
+      <button class="lang-btn active" id="btn-fr" onclick="setLang('fr')">🇫🇷 Français</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 English</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="playAll()">▶ Lire tout / Play all</button>
+      <button class="btn secondary" onclick="stopAll()">■ Arrêter / Stop</button>
+    </div>
+
+    <!-- ===================== SLIDE 1 ===================== -->
+    <div class="slide-card" id="card-1">
+      <div class="slide-header">
+        <div class="slide-num">1</div>
+        <div class="slide-title">
+          <h2>Page de titre / Title</h2>
+          <div class="duration">≈ 25 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Bonjour mesdames et messieurs les membres du jury. Je m'appelle Ahoussi Jean Emmanuel. Aujourd'hui, je vous présente mon mémoire de Master en informatique. Ce travail a été réalisé à la CIE, la Compagnie Ivoirienne d'Électricité, sous la direction du Docteur Gouho Bi Jean Baptiste et de Monsieur Traye Boti. Mon projet s'appelle <strong>SDTD App</strong>. C'est une plateforme web qui permet de gérer les données techniques des postes de transformation. L'objectif est de rendre les opérations de téléconduite plus rapides et plus sûres.
+      </div>
+      <div class="speech-text en">
+        Good morning, members of the jury. My name is Ahoussi Jean Emmanuel. Today I’m presenting my Master’s thesis in Computer Science. I did this work at CIE, the Ivorian Electricity Company, under the supervision of Dr Gouho Bi Jean Baptiste and Mr Traye Boti. My project is called <strong>SDTD App</strong>. It’s a web platform that manages the technical data of electrical substations. The goal is to make telecontrol operations faster and safer.
+      </div>
+      <div class="audio-fr"><audio id="audio-1-fr" controls preload="metadata" src="speech_01_titre.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-1-en" controls preload="metadata" src="speech_01_titre_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 2 ===================== -->
+    <div class="slide-card" id="card-2">
+      <div class="slide-header">
+        <div class="slide-num">2</div>
+        <div class="slide-title">
+          <h2>Plan / Agenda</h2>
+          <div class="duration">≈ 15 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Ma présentation est organisée en cinq parties. D'abord le contexte, puis le problème, ensuite la solution que j'ai conçue, l'implémentation avec une courte démonstration, et enfin les résultats et les perspectives.
+      </div>
+      <div class="speech-text en">
+        My presentation has five parts: the context, the problem, the solution I designed, how it was built with a short demo, and finally the results and next steps.
+      </div>
+      <div class="audio-fr"><audio id="audio-2-fr" controls preload="metadata" src="speech_02_agenda.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-2-en" controls preload="metadata" src="speech_02_agenda_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 3 ===================== -->
+    <div class="slide-card" id="card-3">
+      <div class="slide-header">
+        <div class="slide-num">3</div>
+        <div class="slide-title">
+          <h2>Contexte / Context</h2>
+          <div class="duration">≈ 35 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        La CIE exploite le réseau électrique ivoirien, et je travaille au sein de son unité de téléconduite, le SDTD. La téléconduite, c'est le pilotage du réseau à distance. Dans chaque poste, un équipement appelé RTU collecte les données du terrain et les envoie via le réseau de télécommunications vers le système SCADA de la salle de contrôle. Les opérateurs peuvent ainsi surveiller le réseau et envoyer des commandes à distance. Mon unité maintient toute cette chaîne. Et chaque fois qu'un technicien intervient sur site, il a besoin de documents techniques précis et à jour.
+      </div>
+      <div class="speech-text en">
+        CIE operates the Ivorian power grid, and I work in its telecontrol unit, SDTD. Telecontrol means operating the grid remotely. In each substation, a device called an RTU collects data from the equipment and sends it over the telecom network to the SCADA system in the control room. Operators can then monitor the grid and send commands from a distance. My unit maintains this chain. And every time a technician intervenes on site, they need accurate, up-to-date technical documents.
+      </div>
+      <div class="audio-fr"><audio id="audio-3-fr" controls preload="metadata" src="speech_03_contexte.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-3-en" controls preload="metadata" src="speech_03_contexte_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 4 ===================== -->
+    <div class="slide-card" id="card-4">
+      <div class="slide-header">
+        <div class="slide-num">4</div>
+        <div class="slide-title">
+          <h2>Problème / Problem</h2>
+          <div class="duration">≈ 40 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Avant toute intervention, un technicien a besoin des bons documents : schémas du poste, configuration de la RTU, formulaires d'accès et de travaux. Aujourd'hui, ces informations sont dispersées : dans des dossiers papier, des fichiers Excel non synchronisés, des e-mails avec plusieurs versions, et réparties entre différents services. Résultat : préparer une seule intervention sur site peut prendre jusqu'à une journée, avec un vrai risque de travailler à partir d'un document obsolète, et très peu de traçabilité. Cela m'a conduit à la question de recherche : comment centraliser, sécuriser et tracer les données des postes afin de réduire le temps de préparation des interventions ?
+      </div>
+      <div class="speech-text en">
+        Before any intervention, a technician needs the right documents: substation diagrams, RTU configuration, access and work forms. Today, this information is scattered across paper files, unsynchronized Excel sheets, emails with several versions, and different departments. As a result, preparing a single site intervention can take up to a day, with a real risk of working from an outdated document and very little traceability. This led to my research question: how can we centralize, secure and track substation data in order to reduce intervention preparation time?
+      </div>
+      <div class="audio-fr"><audio id="audio-4-fr" controls preload="metadata" src="speech_04_probleme.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-4-en" controls preload="metadata" src="speech_04_probleme_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 5 ===================== -->
+    <div class="slide-card" id="card-5">
+      <div class="slide-header">
+        <div class="slide-num">5</div>
+        <div class="slide-title">
+          <h2>Objectifs / Objectives</h2>
+          <div class="duration">≈ 25 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Pour répondre à cette question, je me suis fixé quatre objectifs. Premièrement, centraliser les postes, les documents et les interventions sur une seule plateforme. Deuxièmement, garantir la fiabilité des données grâce au versionnement et au suivi des dates d'expiration. Troisièmement, sécuriser l'accès avec des permissions basées sur le rôle de chaque utilisateur. Et quatrièmement, assurer la traçabilité en enregistrant chaque action dans un journal d'audit.
+      </div>
+      <div class="speech-text en">
+        To answer this question, I set four objectives. First, centralize substations, documents and interventions in one platform. Second, keep data reliable through versioning and expiry tracking. Third, secure access with role-based permissions. And fourth, ensure traceability by recording every action in an audit log.
+      </div>
+      <div class="audio-fr"><audio id="audio-5-fr" controls preload="metadata" src="speech_05_objectifs.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-5-en" controls preload="metadata" src="speech_05_objectifs_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 6 ===================== -->
+    <div class="slide-card" id="card-6">
+      <div class="slide-header">
+        <div class="slide-num">6</div>
+        <div class="slide-title">
+          <h2>Solution — SDTD App</h2>
+          <div class="duration">≈ 35 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Ma solution s'appelle SDTD App. C'est une plateforme web utilisée par trois rôles, chacun avec ses propres permissions. L'Administrateur gère les utilisateurs, les rôles et le journal d'audit. Les agents Opérations sont les utilisateurs principaux : ils gèrent les postes et les documents, et planifient, approuvent et valident les interventions. Les Techniciens consultent les documents et gèrent leurs interventions sur le terrain. La plateforme propose une carte interactive des postes, des documents versionnés, un workflow d'intervention, un tableau de bord, des alertes d'expiration et un journal d'audit complet.
+      </div>
+      <div class="speech-text en">
+        My solution is SDTD App, a web platform used by three roles, each with its own permissions. The Administrator manages users, roles and the audit log. Operations staff are the main users: they manage substations and documents, and plan, approve and validate interventions. Technicians consult documents and handle their interventions in the field. The platform includes an interactive substation map, versioned documents, an intervention workflow, a dashboard, expiry alerts and a full audit log.
+      </div>
+      <div class="audio-fr"><audio id="audio-6-fr" controls preload="metadata" src="speech_06_solution.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-6-en" controls preload="metadata" src="speech_06_solution_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 7 ===================== -->
+    <div class="slide-card" id="card-7">
+      <div class="slide-header">
+        <div class="slide-num">7</div>
+        <div class="slide-title">
+          <h2>Architecture / Implementation</h2>
+          <div class="duration">≈ 30 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        La plateforme suit une architecture en trois niveaux. Les utilisateurs travaillent dans un navigateur web, sans aucune installation. Le serveur Laravel applique les règles métier et vérifie les permissions. Et toutes les données sont stockées dans une base MySQL normalisée. J'ai commencé par modéliser le système en UML, puis je l'ai développé module par module, chaque module étant livré avec ses tests automatisés.
+      </div>
+      <div class="speech-text en">
+        The platform follows a three-tier architecture. Users work in a web browser, with nothing to install. The Laravel server applies the business rules and checks permissions. And all data is stored in a normalized MySQL database. I started by modeling the system in UML, then developed it module by module, and each module was delivered with its own automated tests.
+      </div>
+      <div class="audio-fr"><audio id="audio-7-fr" controls preload="metadata" src="speech_07_architecture.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-7-en" controls preload="metadata" src="speech_07_architecture_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 8 ===================== -->
+    <div class="slide-card" id="card-8">
+      <div class="slide-header">
+        <div class="slide-num">8</div>
+        <div class="slide-title">
+          <h2>Démonstration / Demo</h2>
+          <div class="duration">≈ 50 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Voici le déroulement typique d'une intervention de bout en bout. Un : un technicien détecte une anomalie et soumet une demande d'intervention. Elle est enregistrée comme en attente. Deux : l'équipe Opérations la voit immédiatement et l'approuve. Trois : pour préparer le travail, le technicien ouvre la page du poste, qui affiche sa localisation, les documents à jour comme la base de données RTU, et l'historique des interventions, le tout au même endroit. Quatre : une fois le travail terminé, le technicien soumet un compte-rendu, Opérations le valide, et le journal d'audit enregistre qui a fait quoi, et quand.
+      </div>
+      <div class="speech-text en">
+        Here is a typical intervention from start to finish. One: a technician detects a fault and submits an intervention request. It is saved as pending. Two: the Operations team sees it immediately and approves it. Three: to prepare the work, the technician opens the substation page, which shows its location, the current documents, such as the RTU database, and its intervention history, all in one place. Four: once the work is done, the technician submits a report, Operations validates it, and the audit log records who did what, and when.
+      </div>
+      <div class="audio-fr"><audio id="audio-8-fr" controls preload="metadata" src="speech_08_demo.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-8-en" controls preload="metadata" src="speech_08_demo_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 9 ===================== -->
+    <div class="slide-card" id="card-9">
+      <div class="slide-header">
+        <div class="slide-num">9</div>
+        <div class="slide-title">
+          <h2>Résultats / Results</h2>
+          <div class="duration">≈ 40 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Pour valider la plateforme, j'ai exécuté cent vingt-six tests automatisés, avec trois cent vingt-neuf assertions et zéro échec, ainsi que quinze cas de tests manuels, tous réussis. Les tests confirment également que les actions non autorisées sont bloquées, par exemple un technicien qui tenterait de supprimer un poste. En termes d'impact, préparer une intervention prenait environ une journée. Avec SDTD App, cela prend au maximum trente minutes. C'est une estimation basée sur mon expérience de terrain ; elle sera mesurée précisément pendant la phase pilote.
+      </div>
+      <div class="speech-text en">
+        To validate the platform, I ran one hundred twenty-six automated tests, with three hundred twenty-nine assertions and no failures, plus fifteen manual test cases, all passed. The tests also confirm that unauthorized actions are blocked, for example a technician trying to delete a substation. In terms of impact, preparing an intervention used to take about one day. With SDTD App, it takes thirty minutes at most. This is an estimate based on my field experience; it will be measured precisely during the pilot phase.
+      </div>
+      <div class="audio-fr"><audio id="audio-9-fr" controls preload="metadata" src="speech_09_resultats.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-9-en" controls preload="metadata" src="speech_09_resultats_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 10 ===================== -->
+    <div class="slide-card" id="card-10">
+      <div class="slide-header">
+        <div class="slide-num">10</div>
+        <div class="slide-title">
+          <h2>Limitations & Perspectives</h2>
+          <div class="duration">≈ 30 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Le projet présente encore quelques limitations. La plateforme n'est pas encore utilisée en exploitation réelle, elle a été testée avec des données de démonstration, l'import et l'export Excel et PDF ne sont pas encore disponibles, et elle n'est pas connectée au SCADA. Chaque limitation ouvre une perspective : un déploiement pilote au SDTD, les fonctionnalités d'import et d'export, l'authentification à deux facteurs, et une application mobile pour les équipes de terrain.
+      </div>
+      <div class="speech-text en">
+        The project has some limitations. The platform is not yet used in live operations, it was tested with demo data, Excel and PDF import and export are not available yet, and it is not connected to SCADA. Each limitation leads to a next step: a pilot deployment at SDTD, import and export features, two-factor authentication, and a mobile app for field teams.
+      </div>
+      <div class="audio-fr"><audio id="audio-10-fr" controls preload="metadata" src="speech_10_limitations.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-10-en" controls preload="metadata" src="speech_10_limitations_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <!-- ===================== SLIDE 11 ===================== -->
+    <div class="slide-card" id="card-11">
+      <div class="slide-header">
+        <div class="slide-num">11</div>
+        <div class="slide-title">
+          <h2>Conclusion</h2>
+          <div class="duration">≈ 30 s</div>
+        </div>
+      </div>
+      <div class="speech-text fr">
+        Pour conclure, SDTD App remplace les fichiers dispersés par une source unique et fiable pour les données des postes. Les données sont désormais centralisées, fiables, sécurisées et traçables. Les quatre objectifs sont donc atteints. Sur le plan personnel, ce projet m'a permis de partir d'un besoin opérationnel réel à la CIE, de l'analyser sur le terrain, jusqu'à un logiciel testé. Je vous remercie de votre attention. Je suis maintenant à votre disposition pour répondre à vos questions.
+      </div>
+      <div class="speech-text en">
+        To conclude, SDTD App replaces scattered files with one reliable source for substation data. The data is now centralized, reliable, secure and traceable, so all four objectives are met. On a personal level, this project allowed me to take a real operational need at CIE from field analysis to tested software. Thank you for your attention. I welcome your questions.
+      </div>
+      <div class="audio-fr"><audio id="audio-11-fr" controls preload="metadata" src="speech_11_conclusion.mp3"></audio></div>
+      <div class="audio-en"><audio id="audio-11-en" controls preload="metadata" src="speech_11_conclusion_en.mp3"></audio></div>
+      <div class="status">▶ En lecture… / Playing…</div>
+    </div>
+
+    <footer>
+      SDTD App · Soutenance Master Informatique · CIE / AGITEL-Formation<br>
+      Speech FR + EN · Pour entraînement oral
+    </footer>
+  </div>
+
+  <script>
+    const total = 11;
+    let playAllMode = false;
+    let nextIndex = 1;
+    let currentLang = 'fr';
+
+    function setLang(lang) {
+      currentLang = lang;
+      document.body.className = 'lang-' + lang;
+      document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      stopAll();
+    }
+
+    function getAudio(i) {
+      return document.getElementById('audio-' + i + '-' + currentLang);
+    }
+
+    // Event listeners for all audio elements
+    for (let i = 1; i <= total; i++) {
+      ['fr', 'en'].forEach(lang => {
+        const audio = document.getElementById('audio-' + i + '-' + lang);
+        const card = document.getElementById('card-' + i);
+
+        audio.addEventListener('play', () => {
+          // Pause all others
+          for (let j = 1; j <= total; j++) {
+            ['fr', 'en'].forEach(l => {
+              if (!(j === i && l === lang)) {
+                const a = document.getElementById('audio-' + j + '-' + l);
+                a.pause();
+              }
+            });
+            document.getElementById('card-' + j).classList.remove('playing');
+          }
+          card.classList.add('playing');
+        });
+
+        audio.addEventListener('pause', () => {
+          if (!playAllMode) card.classList.remove('playing');
+        });
+
+        audio.addEventListener('ended', () => {
+          card.classList.remove('playing');
+          if (playAllMode && nextIndex <= total) {
+            playNext();
+          } else {
+            playAllMode = false;
+          }
+        });
+      });
+    }
+
+    function playAll() {
+      stopAll();
+      playAllMode = true;
+      nextIndex = 1;
+      playNext();
+    }
+
+    function playNext() {
+      if (nextIndex > total) {
+        playAllMode = false;
+        return;
+      }
+      const audio = getAudio(nextIndex);
+      audio.currentTime = 0;
+      audio.play();
+      document.getElementById('card-' + nextIndex).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nextIndex++;
+    }
+
+    function stopAll() {
+      playAllMode = false;
+      for (let i = 1; i <= total; i++) {
+        ['fr', 'en'].forEach(lang => {
+          const a = document.getElementById('audio-' + i + '-' + lang);
+          a.pause();
+          a.currentTime = 0;
+        });
+        document.getElementById('card-' + i).classList.remove('playing');
+      }
+    }
+  </script>
+</body>
+</html>
